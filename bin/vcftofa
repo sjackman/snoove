@@ -1,0 +1,62 @@
+#!/usr/bin/perl
+# Create a FASTA sequence from a multisample VCF file.
+# The sequence is composed of only the variant sites.
+# Written by Shaun Jackman.
+
+use strict;
+use Getopt::Std qw'getopts';
+
+my %opt;
+getopts 'v', \%opt;
+my $opt_v = $opt{'v'};
+
+# Remove duplicates from a list.
+sub uniq {
+    return keys %{{ map { $_ => 1 } @_ }};
+}
+
+my @names;
+my @seq;
+while (<>) {
+	if (/^#CHROM/) {
+		# Extract the sample names.
+		die unless @names == 0;
+		@names = split;
+		splice(@names, 0, 9);
+	}
+	next if /^#/;
+
+	my ($chrom, $refpos, $id, $refgt, $alt, $qual, $filter, $info,
+		$format, @rest) = split;
+	die unless $format =~ /^GT/;
+	my @alts = split ',', "$refgt,$alt";
+
+	# Convert indels to N.
+	@alts = map { length $_ > 1 ? 'N' : $_ } @alts;
+
+	my @genotypes = map {
+		my ($gt, undef) = split ':', $_, 2;
+		my @alleles = uniq map { $alts[$_] } split '/', $gt;
+        # Convert diploid calls to N.
+		@alleles > 1 ? 'N' : @alleles;
+	} @rest;
+
+	# Skip locus where all samples agree.
+	next if uniq(@genotypes) == 1;
+
+	print STDERR $chrom, "\t", $refpos, "\t", @genotypes, "\n" if $opt_v;
+
+	my $i = 0;
+	for my $genotype (@genotypes) {
+		$seq[$i++] .= $genotype;
+	}
+}
+
+# Keep only the leading alphanumeric portion of the sample name.
+@names = map { s/(^[A-Za-z0-9]*).*/\1/; $_ } @names;
+
+# Output the FASTA file.
+die unless scalar @names == scalar @seq;
+for my $i (0 .. @names - 1) {
+	print '>', $names[$i], "\n", $seq[$i], "\n";
+}
