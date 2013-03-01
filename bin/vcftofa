@@ -15,6 +15,15 @@ sub uniq {
     return keys %{{ map { $_ => 1 } @_ }};
 }
 
+# Call a consensus sequence.
+sub consensus {
+	my %x;
+	for my $i (@_) {
+		$x{$i}++;
+	}
+	(sort {$x{$b} <=> $x{$a} || $a cmp $b} keys %x)[0];
+}
+
 my @names;
 my @seq;
 while (<>) {
@@ -23,6 +32,7 @@ while (<>) {
 		die unless @names == 0;
 		@names = split;
 		splice(@names, 0, 9);
+		unshift @names, 'Reference', 'Consensus';
 	}
 	next if /^#/;
 
@@ -44,6 +54,7 @@ while (<>) {
 	# Skip locus where all samples agree.
 	next if uniq(@genotypes) == 1;
 
+	unshift @genotypes, $alts[0], consensus(@genotypes);
 	print STDERR $chrom, "\t", $refpos, "\t", @genotypes, "\n" if $opt_v;
 
 	my $i = 0;
