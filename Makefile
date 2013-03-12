@@ -4,28 +4,19 @@
 # The data prefix
 p=/data/MiSEQ_data/DATA_2013
 
-# The reference sequence
-r=ref/NC_018521.fa
-
-all: Campylobacter_jejuni_NCTC11168-stamp
+all: Campylobacter_jejuni_NCTC11168.tree \
+	Clostridium_difficile_630.tree \
+	MRSA_USA300.tree \
+	Salmonella_Enteritidis.tree
 
 .PHONY: all
 .DELETE_ON_ERROR:
 .SECONDARY:
 
-lanes:
-	find $p -name *.fastq.gz |cut -d/ -f5 |sort -u >$@
+SampleSheet.csv: $p/*/SampleSheet.csv
+	cat $^ |tr -d '\r' >$@
 
-%.samples:
-	grep -h $* $p/*/SampleSheet.csv |cut -d, -f1 |sort -u >$@
-
-%/files:
-	mkdir -p $*
-	ls $p/*/Data/Intensities/BaseCalls/*.fastq.gz |grep -h $* >$@
-
-%-stamp: %.samples
-	make `sed 's/$$/\/bwa.vcf.gz.tbi/' $^`
-	touch $@
+# Actions per species
 
 %.fa.bwt: %.fa
 	bwa index $<
@@ -33,17 +24,15 @@ lanes:
 %.fa.fai: %.fa
 	samtools faidx $<
 
-%/bwa.bam: %/files
-	bwa aln $r `grep _R1_ $<` >$*/R1.sai
-	bwa aln $r `grep _R2_ $<` >$*/R2.sai
-	bwa sampe $r $*/R1.sai $*/R2.sai `<$<` |samtools view -Su - |samtools sort - $*/bwa
-	rm -f $*/R1.sai $*/R2.sai
+%.samples: SampleSheet.csv
+	awk -F, '$$11=="$*" {print $$1}' $< |sort -u >$@
 
-%.bam.bai: %.bam
-	samtools index $<
+%-stamp: %.samples ref/%.fa.bwt
+	make r=ref/$*.fa `sed 's/$$/\/bwa.bam.bai/' $<`
+	touch $@
 
-%.bcf: %.bam
-	samtools mpileup -uf $r $< >$@
+%.bcf: %.samples %-stamp
+	samtools mpileup -uf ref/$*.fa `sed 's/$$/\/bwa.bam/' $<` >$@
 
 %.vcf: %.bcf
 	bcftools view -vcg $< >$*.vcf
@@ -59,3 +48,21 @@ lanes:
 
 %.tree: %.fa
 	FastTree $< >$@
+
+# Actions per sample
+
+fastq-files: $p/*/Data/Intensities/BaseCalls/*.fastq.gz
+	ls $^ >$@
+
+%/fastq-files: fastq-files
+	mkdir -p $*
+	grep BaseCalls/$*_ $< >$@
+
+%/bwa.bam: %/fastq-files
+	bwa aln $r `grep _R1_ $<` >$*/R1.sai
+	bwa aln $r `grep _R2_ $<` >$*/R2.sai
+	bwa sampe $r $*/R1.sai $*/R2.sai `<$<` |samtools view -Su - |samtools sort - $*/bwa
+	rm -f $*/R1.sai $*/R2.sai
+
+%.bam.bai: %.bam
+	samtools index $<
