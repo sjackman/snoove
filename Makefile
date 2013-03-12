@@ -56,7 +56,7 @@ fastq-files: $p/*/Data/Intensities/BaseCalls/*.fastq.gz
 
 %/fastq-files: fastq-files
 	mkdir -p $*
-	grep BaseCalls/$*_ $< >$@
+	grep /$*_ $< >$@
 
 %/bwa.bam: %/fastq-files
 	bwa aln $r `grep _R1_ $<` >$*/R1.sai
