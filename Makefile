@@ -32,7 +32,7 @@ SampleSheet.csv: $p/*/SampleSheet.csv
 	touch $@
 
 %.bcf: %.samples %-stamp
-	samtools mpileup -uf ref/$*.fa `sed 's/$$/\/bwa.bam/' $<` >$@
+	samtools mpileup -Igf ref/$*.fa `sed 's/$$/\/bwa.bam/' $<` >$@
 
 %.vcf: %.bcf
 	bcftools view -vcg $< >$*.vcf
