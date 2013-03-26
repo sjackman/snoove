@@ -1,3 +1,4 @@
+#!/usr/bin/make -rRf
 # Map reads to a reference, call variants and create a dendrogram
 # Written by Shaun Jackman <sjackman@gmail.com>
 
