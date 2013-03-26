@@ -66,3 +66,8 @@ fastq-files: $p/*/Data/Intensities/BaseCalls/*.fastq.gz
 
 %.bam.bai: %.bam
 	samtools index $<
+
+%/fastqc/stamp: %/fastq-files
+	mkdir -p $*/fastqc
+	fastqc -o $*/fastqc `<$<`
+	touch $@
