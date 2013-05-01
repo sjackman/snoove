@@ -38,3 +38,16 @@ bwplot(gq ~ gt, gt.gq, panel = panel.violin,
 bwplot(gq ~ gt | sample, gt.gq, panel = panel.violin,
 	main='Genotype quality vs. genotype',
 	ylab='Genotype quality', xlab='Genotype')
+
+# Examine a FASTA file for 'N' characters
+
+library(Biostrings)
+
+fa <- readDNAStringSet('Salmonella_all.fa')
+fa <- fa[!names(fa) %in% c('Reference', 'Consensus'),]
+n <- max(width(fa))
+h <- alphabetFrequency(fa)
+pn <- h[,'N'] / n
+hist(pn, 20)
+table(pn < 0.5)
+names(fa)[pn > 0.5]
