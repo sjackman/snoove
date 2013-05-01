@@ -48,7 +48,7 @@ SampleSheet.csv: $p/*/SampleSheet.csv
 	zcat $< |bin/vcftofa >$@
 
 %.tree: %.fa
-	FastTree $< >$@
+	FastTree -nt $< >$@
 
 # Actions per sample
 
