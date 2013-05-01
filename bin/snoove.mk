@@ -16,6 +16,7 @@ all: Campylobacter_jejuni_NCTC11168.tree \
 
 SampleSheet.csv: $p/*/SampleSheet.csv
 	cat $^ |tr -d '\r' >$@
+	if [ -r SampleSheet.csv.diff ]; then patch <SampleSheet.csv.diff; fi
 
 # Actions per species
 
