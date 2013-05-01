@@ -7,7 +7,7 @@ library('lattice')
 library('reshape2')
 library('VariantAnnotation')
 
-vcf <- readVcf('98E.vcf.gz', 'NC_018521')
+vcf <- readVcf('Salmonella_Enteritidis.vcf.gz', 'NC_018521')
 
 # Histogram of the quality values.
 qual <- fixed(vcf)$QUAL
