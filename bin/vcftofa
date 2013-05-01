@@ -7,7 +7,8 @@ use strict;
 use Getopt::Std qw'getopts';
 
 my %opt;
-getopts 'v', \%opt;
+getopts 'q:v', \%opt;
+my $opt_q = defined $opt{'q'} ? $opt{'q'} : 20;
 my $opt_v = $opt{'v'};
 
 # Remove duplicates from a list.
@@ -38,17 +39,17 @@ while (<>) {
 
 	my ($chrom, $refpos, $id, $refgt, $alt, $qual, $filter, $info,
 		$format, @rest) = split;
-	die unless $format =~ /^GT/;
+	die unless $format =~ /^GT:..:GQ/;
 	my @alts = split ',', "$refgt,$alt";
 
 	# Convert indels to N.
 	@alts = map { length $_ > 1 ? 'N' : $_ } @alts;
 
 	my @genotypes = map {
-		my ($gt, undef) = split ':', $_, 2;
+		my ($gt, undef, $gq, undef) = split ':', $_, 4;
 		my @alleles = uniq map { $alts[$_] } split '/', $gt;
-        # Convert diploid calls to N.
-		@alleles > 1 ? 'N' : @alleles;
+        # Convert poor quality genoptypes and diploid calls to N.
+		$gq < $opt_q || @alleles > 1 ? 'N' : @alleles;
 	} @rest;
 
 	# Skip locus where all samples agree.
@@ -65,9 +66,20 @@ while (<>) {
 
 # Keep only the leading alphanumeric portion of the sample name.
 @names = map { s/(^[A-Za-z0-9]*).*/\1/; $_ } @names;
+die unless scalar @names == scalar @seq;
+
+# Perform some QA.
+for my $i (0 .. @names - 1) {
+	my ($name, $s) = ($names[$i], $seq[$i]);
+	my $numn = $s =~ tr/N//;
+	my $len = length $s;
+	# Check the proportion of N per sample.
+	if ($numn / $len > 0.2) {
+		print STDERR "Warning: `$name' is more than 20% N: $numn / $len = ", $numn / $len, "\n";
+	}
+}
 
 # Output the FASTA file.
-die unless scalar @names == scalar @seq;
 for my $i (0 .. @names - 1) {
 	print '>', $names[$i], "\n", $seq[$i], "\n";
 }
