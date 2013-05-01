@@ -29,7 +29,7 @@ SampleSheet.csv: $p/*/SampleSheet.csv
 	awk -F, '$$11=="$*" {print $$1}' $< |sort -u >$@
 
 %-stamp: %.samples ref/%.fa.bwt
-	make r=ref/$*.fa `sed 's/$$/\/bwa.bam.bai/' $<`
+	$(MAKE) -f $(MAKEFILE_LIST) r=ref/$*.fa `sed 's/$$/\/bwa.bam.bai/' $<`
 	touch $@
 
 %.bcf: %.samples %-stamp
