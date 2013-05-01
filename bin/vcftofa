@@ -52,8 +52,9 @@ while (<>) {
 		$gq < $opt_q || @alleles > 1 ? 'N' : @alleles;
 	} @rest;
 
-	# Skip locus where all samples agree.
-	next if uniq(@genotypes) == 1;
+	# Skip locus where all samples agree, excluding Ns.
+	my $ngenotypes = join('', uniq(@genotypes)) =~ tr/ACGT//;
+	next if $ngenotypes < 2;
 
 	unshift @genotypes, $alts[0], consensus(@genotypes);
 	print STDERR $chrom, "\t", $refpos, "\t", @genotypes, "\n" if $opt_v;
