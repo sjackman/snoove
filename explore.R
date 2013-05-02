@@ -45,9 +45,23 @@ library(Biostrings)
 
 fa <- readDNAStringSet('Salmonella_all.fa')
 fa <- fa[!names(fa) %in% c('Reference', 'Consensus'),]
-n <- max(width(fa))
+
+# Identify failed samples
+len <- max(width(fa))
 h <- alphabetFrequency(fa)
-pn <- h[,'N'] / n
+pn <- h[,'N'] / len
 hist(pn, 20)
+boxplot(pn[pn<0.5])
 table(pn < 0.5)
-names(fa)[pn > 0.5]
+
+# Remove failed samples
+names(fa)[pn >= 0.5]
+fa <- fa[pn < 0.5]
+
+# Identify loci with many N
+c <- t(consensusMatrix(fa))
+n <- length(fa)
+cn <- c[,'N'] / n
+hist(cn, 20)
+boxplot(cn[cn<0.5])
+table(cn < 0.5)
