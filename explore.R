@@ -63,5 +63,11 @@ c <- t(consensusMatrix(fa))
 n <- length(fa)
 cn <- c[,'N'] / n
 hist(cn, 20)
-boxplot(cn[cn<0.5])
-table(cn < 0.5)
+boxplot(cn[cn < 0.2])
+table(cn < 0.2)
+table(cn < 0.2) / len
+
+fa.good <- DNAStringSet(apply(
+	as.matrix(fa)[,cn < 0.2], 1, function(x) paste(x, collapse='')))
+writeXStringSet(DNAStringSet(fa.good), 'Salmonella_good.fa',
+	width=max(width(fa.good)))
